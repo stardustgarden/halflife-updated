@@ -120,7 +120,8 @@ static bool CL_InitClient()
 		return false;
 	}
 
-	if (UTIL_IsValveGameDirectory())
+	// if (UTIL_IsValveGameDirectory())
+	if (false)
 	{
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Fatal Error",
 			"This mod has detected that it is being run from a Valve game directory which is not supported\n"
