@@ -1522,7 +1522,7 @@ void CTestHull::DropDelay()
 {
 	//	UTIL_CenterPrintAll( "Node Graph out of Date. Rebuilding..." );
 
-	UTIL_SetOrigin(VARS(pev), WorldGraph.m_pNodes[0].m_vecOrigin);
+	UTIL_SetOrigin(pev, WorldGraph.m_pNodes[0].m_vecOrigin);
 
 	SetThink(&CTestHull::CallBuildNodeGraph);
 
@@ -2612,7 +2612,7 @@ bool CGraph::CheckNODFile(const char* szMapName)
 	bool retValue = true;
 
 	int iCompare;
-	if (COMPARE_FILE_TIME(bspFileName.c_str(), graphFileName.c_str(), &iCompare))
+	if (FileSystem_CompareFileTime(bspFileName.c_str(), graphFileName.c_str(), &iCompare))
 	{
 		if (iCompare > 0)
 		{ // BSP file is newer.

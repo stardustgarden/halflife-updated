@@ -77,6 +77,7 @@ int g_iUser3 = 0;
 #define SBOARD_INDENT_Y_400 20
 
 void IN_ResetMouse();
+void IN_ResetRelativeMouseState();
 extern CMenuPanel* CMessageWindowPanel_Create(const char* szMOTD, const char* szTitle, bool iShadeFullscreen, bool iRemoveMe, int x, int y, int wide, int tall);
 extern float* GetClientColor(int clientIndex);
 
@@ -841,7 +842,7 @@ int TeamFortressViewport::CreateCommandMenu(const char* menuFile, bool direction
 				{
 					gEngfuncs.Con_Printf("Too many menus in %s past '%s'\n", menuFile, szLastButtonText);
 				}
-				else
+				else if (pButton)
 				{
 					// Create the menu
 					m_pCommandMenus[m_iNumMenus] = CreateSubMenu(pButton, m_pCurrentCommandMenu, iButtonY);
@@ -950,7 +951,6 @@ CommandButton* TeamFortressViewport::CreateCustomButton(char* pButtonText, char*
 		pMenu = CreateSubMenu(pButton, m_pCurrentCommandMenu, iYOffset);
 		m_pCommandMenus[m_iNumMenus] = pMenu;
 		m_iNumMenus++;
-
 	}
 
 	return pButton;
@@ -1672,6 +1672,12 @@ void TeamFortressViewport::UpdateCursorState()
 	if (0 == gEngfuncs.pDemoAPI->IsPlayingback())
 	{
 		IN_ResetMouse();
+	}
+
+	if (g_iVisibleMouse)
+	{
+		// Clear any residual input so our camera doesn't jerk when dismissing the UI
+		IN_ResetRelativeMouseState();
 	}
 
 	g_iVisibleMouse = false;

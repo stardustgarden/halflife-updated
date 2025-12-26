@@ -75,8 +75,9 @@ public:
 	bool CheckMeleeAttack1(float flDot, float flDist) override;
 	bool CheckRangeAttack1(float flDot, float flDist) override;
 
-	float ChangeYaw(int speed) override;
+	float ChangeYaw(int yawSpeed) override;
 	Activity GetStoppedActivity() override;
+	void SetActivity(Activity NewActivity) override;
 
 	void Move(float flInterval) override;
 	void MoveExecute(CBaseEntity* pTargetEnt, const Vector& vecDir, float flInterval) override;
@@ -87,7 +88,7 @@ public:
 
 	float VectorToPitch(const Vector& vec);
 	float FlPitchDiff();
-	float ChangePitch(int speed);
+	float ChangePitch(int pitchSpeed);
 
 	Vector m_SaveVelocity;
 	float m_idealDist;
@@ -105,7 +106,8 @@ public:
 
 	float m_flNextAlert;
 
-	float m_flLastPitchTime;
+	float m_flLastPitchTime; // Last frame time pitch was changed
+	float m_flLastZYawTime;	 // Last frame time Z was changed when yaw was changed
 
 	static const char* pIdleSounds[];
 	static const char* pAlertSounds[];
@@ -289,7 +291,6 @@ Task_t tlTwitchDie[] =
 		{TASK_STOP_MOVING, 0},
 		{TASK_SOUND_DIE, (float)0},
 		{TASK_DIE, (float)0},
-		{TASK_ICHTHYOSAUR_FLOAT, (float)0},
 };
 
 Schedule_t slTwitchDie[] =
@@ -301,12 +302,26 @@ Schedule_t slTwitchDie[] =
 			"Die"},
 };
 
+Task_t tlFloat[] =
+	{
+		{TASK_ICHTHYOSAUR_FLOAT, (float)0},
+};
+
+Schedule_t slFloat[] =
+	{
+		{tlFloat,
+			ARRAYSIZE(tlFloat),
+			0,
+			0,
+			"Float"},
+};
 
 DEFINE_CUSTOM_SCHEDULES(CIchthyosaur){
 	slSwimAround,
 	slSwimAgitated,
 	slCircleEnemy,
 	slTwitchDie,
+	slFloat,
 };
 IMPLEMENT_CUSTOM_SCHEDULES(CIchthyosaur, CFlyingMonster);
 
@@ -564,6 +579,12 @@ Schedule_t* CIchthyosaur::GetScheduleOfType(int Type)
 	case SCHED_FAIL:
 		return slSwimAgitated;
 	case SCHED_DIE:
+		if (pev->deadflag == DEAD_DEAD)
+		{
+			//Already dead, immediately switch to float.
+			return slFloat;
+		}
+
 		return slTwitchDie;
 	case SCHED_CHASE_ENEMY:
 		AttackSound();
@@ -601,9 +622,17 @@ void CIchthyosaur::StartTask(Task_t* pTask)
 		break;
 
 	case TASK_ICHTHYOSAUR_FLOAT:
-		pev->skin = EYE_BASE;
-		SetSequenceByName("bellyup");
+	{
+		const int sequenceIndex = LookupSequence("bellyup");
+
+		//Don't restart the animation if we're restoring.
+		if (pev->sequence != sequenceIndex)
+		{
+			pev->skin = EYE_BASE;
+			SetSequenceByName("bellyup");
+		}
 		break;
+	}
 
 	default:
 		CFlyingMonster::StartTask(pTask);
@@ -778,12 +807,18 @@ float CIchthyosaur::FlPitchDiff()
 	return flPitchDiff;
 }
 
-float CIchthyosaur::ChangePitch(int speed)
+float CIchthyosaur::ChangePitch(int pitchSpeed)
 {
 	if (pev->movetype == MOVETYPE_FLY)
 	{
 		float diff = FlPitchDiff();
 		float target = 0;
+
+		if (m_flLastPitchTime == 0.0f)
+		{
+			m_flLastPitchTime = gpGlobals->time - gpGlobals->frametime;
+		}
+
 		if (m_IdealActivity != GetStoppedActivity())
 		{
 			if (diff < -20)
@@ -792,31 +827,30 @@ float CIchthyosaur::ChangePitch(int speed)
 				target = -45;
 		}
 
-		if (m_flLastPitchTime == 0)
-		{
-			m_flLastPitchTime = gpGlobals->time - gpGlobals->frametime;
-		}
-
 		float delta = gpGlobals->time - m_flLastPitchTime;
-
 		m_flLastPitchTime = gpGlobals->time;
 
-		if (delta > 0.25)
-		{
-			delta = 0.25;
-		}
+		// Clamp delta like the engine does with frametime
+		if (delta > 0.25f)
+			delta = 0.25f;
 
-		pev->angles.x = UTIL_Approach(target, pev->angles.x, 220.0 * delta);
+		float speed = 220.0f * delta;
+		pev->angles.x = UTIL_Approach(target, pev->angles.x, speed);
 	}
 	return 0;
 }
 
-float CIchthyosaur::ChangeYaw(int speed)
+float CIchthyosaur::ChangeYaw(int yawSpeed)
 {
 	if (pev->movetype == MOVETYPE_FLY)
 	{
 		float diff = FlYawDiff();
 		float target = 0;
+
+		if (m_flLastZYawTime == 0.0f)
+		{
+			m_flLastZYawTime = gpGlobals->time - gpGlobals->frametime;
+		}
 
 		if (m_IdealActivity != GetStoppedActivity())
 		{
@@ -826,23 +860,17 @@ float CIchthyosaur::ChangeYaw(int speed)
 				target = -20;
 		}
 
-		if (m_flLastZYawTime == 0)
-		{
-			m_flLastZYawTime = gpGlobals->time - gpGlobals->frametime;
-		}
-
 		float delta = gpGlobals->time - m_flLastZYawTime;
-
 		m_flLastZYawTime = gpGlobals->time;
 
-		if (delta > 0.25)
-		{
-			delta = 0.25;
-		}
+		// Clamp delta like the engine does with frametime
+		if (delta > 0.25f)
+			delta = 0.25f;
 
-		pev->angles.z = UTIL_Approach(target, pev->angles.z, 220.0 * delta);
+		float speed = 220.f * delta;
+		pev->angles.z = UTIL_Approach(target, pev->angles.z, speed);
 	}
-	return CFlyingMonster::ChangeYaw(speed);
+	return CFlyingMonster::ChangeYaw(yawSpeed);
 }
 
 
@@ -851,6 +879,20 @@ Activity CIchthyosaur::GetStoppedActivity()
 	if (pev->movetype != MOVETYPE_FLY) // UNDONE: Ground idle here, IDLE may be something else
 		return ACT_IDLE;
 	return ACT_WALK;
+}
+
+void CIchthyosaur::SetActivity(Activity NewActivity)
+{
+	const float frame = pev->frame;
+
+	CFlyingMonster::SetActivity(NewActivity);
+
+	//Restore belly up state.
+	if (pev->deadflag == DEAD_DEAD)
+	{
+		SetSequenceByName("bellyup");
+		pev->frame = frame;
+	}
 }
 
 void CIchthyosaur::MoveExecute(CBaseEntity* pTargetEnt, const Vector& vecDir, float flInterval)

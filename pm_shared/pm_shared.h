@@ -19,11 +19,13 @@
 
 #pragma once
 
+#include "Platform.h"
+
 struct playermove_s;
 
 void PM_Init(playermove_s* ppmove);
-void PM_Move(playermove_s* ppmove, int server);
-char PM_FindTextureType(char* name);
+void PM_Move(playermove_s* ppmove, qboolean server);
+char PM_FindTextureType(const char* name);
 
 /**
 *	@brief Engine calls this to enumerate player collision hulls, for prediction. Return false if the hullnumber doesn't exist.
@@ -40,3 +42,5 @@ bool PM_GetHullBounds(int hullnumber, float* mins, float* maxs);
 #define OBS_MAP_CHASE 6
 
 extern playermove_s* pmove;
+
+inline bool g_CheckForPlayerStuck = false;

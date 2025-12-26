@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2002, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2002, Valve LLC, All rights reserved. ============
 //
 // Purpose:
 //
@@ -37,3 +37,4 @@ extern Vector v_angles;
 extern Vector v_client_aimangles;
 extern float g_lastFOV;
 extern struct local_state_s* g_finalstate;
+extern int g_CurrentWeaponId;

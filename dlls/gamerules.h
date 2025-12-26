@@ -65,8 +65,8 @@ public:
 	virtual void Think() = 0;								 // GR_Think - runs every server frame, should handle any timer tasks, periodic events, etc.
 	virtual bool IsAllowedToSpawn(CBaseEntity* pEntity) = 0; // Can this item spawn (eg monsters don't spawn in deathmatch).
 
-	virtual bool FAllowFlashlight() = 0;													   // Are players allowed to switch on their flashlight?
-	virtual bool FShouldSwitchWeapon(CBasePlayer* pPlayer, CBasePlayerItem* pWeapon) = 0;	   // should the player switch to this weapon?
+	virtual bool FAllowFlashlight() = 0;																			  // Are players allowed to switch on their flashlight?
+	virtual bool FShouldSwitchWeapon(CBasePlayer* pPlayer, CBasePlayerItem* pWeapon) = 0;							  // should the player switch to this weapon?
 	virtual bool GetNextBestWeapon(CBasePlayer* pPlayer, CBasePlayerItem* pCurrentWeapon, bool alwaysSearch = false); // I can't use this weapon anymore, get me the next best one.
 
 	// Functions to verify the single/multiplayer status of a game
@@ -361,6 +361,33 @@ protected:
 	float m_flIntermissionEndTime = 0;
 	bool m_iEndIntermissionButtonHit;
 	void SendMOTDToClient(edict_t* client);
+};
+
+//=========================================================
+// CMultiplayBusters
+// Rules for a multiplayer mode that makes you feel good
+//=========================================================
+class CMultiplayBusters : public CHalfLifeMultiplay
+{
+public:
+	CMultiplayBusters();
+
+	void Think();
+	int IPointsForKill(CBasePlayer* pAttacker, CBasePlayer* pKilled);
+	void PlayerKilled(CBasePlayer* pVictim, entvars_t* pKiller, entvars_t* pInflictor);
+	void DeathNotice(CBasePlayer* pVictim, entvars_t* pKiller, entvars_t* pInflictor);
+	int WeaponShouldRespawn(CBasePlayerItem* pWeapon);
+	bool CanHavePlayerItem(CBasePlayer* pPlayer, CBasePlayerItem* pWeapon);
+	bool CanHaveItem(CBasePlayer* pPlayer, CItem* pItem);
+	void PlayerGotWeapon(CBasePlayer* pPlayer, CBasePlayerItem* pWeapon);
+	void ClientUserInfoChanged(CBasePlayer* pPlayer, char* infobuffer);
+	void PlayerSpawn(CBasePlayer* pPlayer);
+
+	void SetPlayerModel(CBasePlayer* pPlayer);
+
+protected:
+	float m_flEgonBustingCheckTime = -1.0f;
+	void CheckForEgons();
 };
 
 inline DLL_GLOBAL CGameRules* g_pGameRules = nullptr;

@@ -115,9 +115,10 @@ public:
 	int m_afButtonPressed;
 	int m_afButtonReleased;
 
-	edict_t* m_pentSndLast; // last sound entity to modify player room type
-	float m_flSndRoomtype;	// last roomtype set by sound entity
-	float m_flSndRange;		// dist from player to sound entity
+	EHANDLE m_SndLast;	   // last sound entity to modify player room type
+	int m_SndRoomtype = 0; // last roomtype set by sound entity. Defaults to 0 on new maps to disable it by default.
+	int m_ClientSndRoomtype;
+	float m_flSndRange; // dist from player to sound entity
 
 	float m_flFallVelocity;
 
@@ -195,11 +196,11 @@ public:
 	Vector m_vecAutoAim;
 	bool m_fOnTarget;
 	int m_iDeaths;
-	float m_iRespawnFrames; // used in PlayerDeathThink() to make sure players can always respawn
+	float m_flRespawnTimer; // used in PlayerDeathThink() to make sure players can always respawn
 
 	int m_lastx, m_lasty; // These are the previous update's crosshair angles, DON"T SAVE/RESTORE
 
-	int m_nCustomSprayFrames; // Custom clan logo frames for this player
+	int m_nCustomSprayFrames = -1; // Custom clan logo frames for this player
 	float m_flNextDecalTime;  // next time this player can spray a decal
 
 	char m_szTeamName[TEAM_NAME_LENGTH];
@@ -282,6 +283,7 @@ public:
 	void DropPlayerItem(char* pszItemName);
 	bool HasPlayerItem(CBasePlayerItem* pCheckItem);
 	bool HasNamedPlayerItem(const char* pszItemName);
+	bool HasPlayerItemFromID(int nID);
 	bool HasWeapons(); // do I have ANY weapons?
 	void SelectPrevItem(int iItem);
 	void SelectNextItem(int iItem);
@@ -290,6 +292,7 @@ public:
 	void ItemPreFrame();
 	void ItemPostFrame();
 	void GiveNamedItem(const char* szName);
+	void GiveNamedItem(const char* szName, int defaultAmmo);
 	void EnableControl(bool fControl);
 
 	int GiveAmmo(int iAmount, const char* szName, int iMax) override;

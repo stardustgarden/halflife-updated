@@ -20,7 +20,7 @@
 #include "gamerules.h"
 
 // Precaches the ammo and queues the ammo info for sending to clients
-void AddAmmoNameToAmmoRegistry(const char* szAmmoname)
+void AddAmmoNameToAmmoRegistry(const char* szAmmoname, const char* weaponName)
 {
 	// make sure it's not already in the registry
 	for (int i = 0; i < MAX_AMMO_SLOTS; i++)
@@ -38,8 +38,11 @@ void AddAmmoNameToAmmoRegistry(const char* szAmmoname)
 	if (giAmmoIndex >= MAX_AMMO_SLOTS)
 		giAmmoIndex = 0;
 
-	CBasePlayerItem::AmmoInfoArray[giAmmoIndex].pszName = szAmmoname;
-	CBasePlayerItem::AmmoInfoArray[giAmmoIndex].iId = giAmmoIndex; // yes, this info is redundant
+	auto& ammoType = CBasePlayerItem::AmmoInfoArray[giAmmoIndex];
+
+	ammoType.pszName = szAmmoname;
+	ammoType.iId = giAmmoIndex; // yes, this info is redundant
+	ammoType.WeaponName = weaponName;
 }
 
 bool CBasePlayerWeapon::CanDeploy()
@@ -167,18 +170,18 @@ void CBasePlayerWeapon::ItemPostFrame()
 
 		m_fFireOnEmpty = false;
 
-#ifndef CLIENT_DLL
 		if (!IsUseable() && m_flNextPrimaryAttack < (UseDecrement() ? 0.0 : gpGlobals->time))
 		{
+#ifndef CLIENT_DLL
 			// weapon isn't useable, switch.
 			if ((iFlags() & ITEM_FLAG_NOAUTOSWITCHEMPTY) == 0 && g_pGameRules->GetNextBestWeapon(m_pPlayer, this))
 			{
 				m_flNextPrimaryAttack = (UseDecrement() ? 0.0 : gpGlobals->time) + 0.3;
 				return;
 			}
+#endif
 		}
 		else
-#endif
 		{
 			// weapon is useable. Reload if empty and weapon has waited as long as it has to after firing
 			if (m_iClip == 0 && (iFlags() & ITEM_FLAG_NOAUTORELOAD) == 0 && m_flNextPrimaryAttack < (UseDecrement() ? 0.0 : gpGlobals->time))
@@ -220,6 +223,20 @@ void CBasePlayer::SelectLastItem()
 	CBasePlayerItem* pTemp = m_pActiveItem;
 	m_pActiveItem = m_pLastItem;
 	m_pLastItem = pTemp;
+
+	auto weapon = m_pActiveItem->GetWeaponPtr();
+
+	if (weapon)
+	{
+		weapon->m_ForceSendAnimations = true;
+	}
+
 	m_pActiveItem->Deploy();
+
+	if (weapon)
+	{
+		weapon->m_ForceSendAnimations = false;
+	}
+
 	m_pActiveItem->UpdateItemInfo();
 }

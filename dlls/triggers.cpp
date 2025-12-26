@@ -329,7 +329,7 @@ bool CMultiManager::KeyValue(KeyValueData* pkvd)
 		{
 			char tmp[128];
 
-			UTIL_StripToken(pkvd->szKeyName, tmp);
+			UTIL_StripToken(pkvd->szKeyName, tmp, sizeof(tmp));
 			m_iTargetName[m_cTargets] = ALLOC_STRING(tmp);
 			m_flTargetDelay[m_cTargets] = atof(pkvd->szValue);
 			m_cTargets++;
@@ -695,10 +695,8 @@ void CTriggerCDAudio::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYP
 
 void PlayCDTrack(int iTrack)
 {
-	edict_t* pClient;
-
 	// manually find the single player.
-	pClient = g_engfuncs.pfnPEntityOfEntIndex(1);
+	CBaseEntity* pClient = UTIL_GetLocalPlayer();
 
 	// Can't play if the client is not connected!
 	if (!pClient)
@@ -712,14 +710,14 @@ void PlayCDTrack(int iTrack)
 
 	if (iTrack == -1)
 	{
-		CLIENT_COMMAND(pClient, "cd stop\n");
+		CLIENT_COMMAND(pClient->edict(), "cd stop\n");
 	}
 	else
 	{
 		char string[64];
 
 		sprintf(string, "cd play %3d\n", iTrack);
-		CLIENT_COMMAND(pClient, string);
+		CLIENT_COMMAND(pClient->edict(), string);
 	}
 }
 
@@ -776,10 +774,8 @@ void CTargetCDAudio::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE
 // only plays for ONE client, so only use in single play!
 void CTargetCDAudio::Think()
 {
-	edict_t* pClient;
-
 	// manually find the single player.
-	pClient = g_engfuncs.pfnPEntityOfEntIndex(1);
+	CBaseEntity* pClient = UTIL_GetLocalPlayer();
 
 	// Can't play if the client is not connected!
 	if (!pClient)
@@ -787,7 +783,7 @@ void CTargetCDAudio::Think()
 
 	pev->nextthink = gpGlobals->time + 0.5;
 
-	if ((pClient->v.origin - pev->origin).Length() <= pev->scale)
+	if ((pClient->pev->origin - pev->origin).Length() <= pev->scale)
 		Play();
 }
 
@@ -1003,7 +999,19 @@ void CBaseTrigger::HurtTouch(CBaseEntity* pOther)
 #endif
 
 	if (fldmg < 0)
-		pOther->TakeHealth(-fldmg, m_bitsDamageInflict);
+	{
+		bool bApplyHeal = true;
+
+		if (g_pGameRules->IsMultiplayer() && pOther->IsPlayer())
+		{
+			bApplyHeal = pOther->pev->deadflag == DEAD_NO;
+		}
+
+		if (bApplyHeal)
+		{
+			pOther->TakeHealth(-fldmg, m_bitsDamageInflict);
+		}
+	}
 	else
 		pOther->TakeDamage(pev, pev, fldmg, m_bitsDamageInflict);
 
@@ -1418,6 +1426,11 @@ void CChangeLevel::Spawn()
 	if (FStrEq(m_szLandmarkName, ""))
 		ALERT(at_console, "trigger_changelevel to %s doesn't have a landmark", m_szMapName);
 
+	if (0 == stricmp(m_szMapName, STRING(gpGlobals->mapname)))
+	{
+		ALERT(at_error, "trigger_changelevel points to the current map (%s), which does not work\n", STRING(gpGlobals->mapname));
+	}
+
 	if (!FStringNull(pev->targetname))
 	{
 		SetUse(&CChangeLevel::UseChangeLevel);
@@ -1490,7 +1503,7 @@ void CChangeLevel::ChangeLevelNow(CBaseEntity* pActivator)
 	pev->dmgtime = gpGlobals->time;
 
 
-	CBaseEntity* pPlayer = CBaseEntity::Instance(g_engfuncs.pfnPEntityOfEntIndex(1));
+	CBaseEntity* pPlayer = UTIL_GetLocalPlayer();
 	if (!InTransitionVolume(pPlayer, m_szLandmarkName))
 	{
 		ALERT(at_aiconsole, "Player isn't in the transition volume %s, aborting\n", m_szLandmarkName);
@@ -2243,7 +2256,12 @@ void CTriggerCamera::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE
 	}
 	if (!pActivator || !pActivator->IsPlayer())
 	{
-		pActivator = CBaseEntity::Instance(g_engfuncs.pfnPEntityOfEntIndex(1));
+		pActivator = UTIL_GetLocalPlayer();
+
+		if (!pActivator)
+		{
+			return;
+		}
 	}
 
 	auto player = static_cast<CBasePlayer*>(pActivator);

@@ -1,4 +1,4 @@
-//========= Copyright � 1996-2001, Valve LLC, All rights reserved. ============
+//========= Copyright ï¿½ 1996-2001, Valve LLC, All rights reserved. ============
 //
 // Purpose: 
 //
@@ -178,6 +178,12 @@ public:
 	virtual FileHandle_t	OpenFromCacheForRead( const char *pFileName, const char *pOptions, const char *pathID = 0L ) = 0;
 
 	virtual void			AddSearchPathNoWrite( const char *pPath, const char *pathID ) = 0;
+
+	//
+	// ABOVE: Pre-25th anniversary interface
+	//
+
+	virtual long			GetFileModificationTime(const char* pFileName) = 0;
 };
 
 // Steam3/Src compat

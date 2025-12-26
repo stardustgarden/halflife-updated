@@ -384,6 +384,7 @@ typedef enum _fieldtypes
 #define DEFINE_FIELD(type, name, fieldtype) _FIELD(type, name, fieldtype, 1, 0)
 #define DEFINE_ARRAY(type, name, fieldtype, count) _FIELD(type, name, fieldtype, count, 0)
 #define DEFINE_ENTITY_FIELD(name, fieldtype) _FIELD(entvars_t, name, fieldtype, 1, 0)
+#define DEFINE_ENTITY_ARRAY(name, fieldtype, count) _FIELD(entvars_t, name, fieldtype, count, 0)
 #define DEFINE_ENTITY_GLOBAL_FIELD(name, fieldtype) _FIELD(entvars_t, name, fieldtype, 1, FTYPEDESC_GLOBAL)
 #define DEFINE_GLOBAL_FIELD(type, name, fieldtype) _FIELD(type, name, fieldtype, 1, FTYPEDESC_GLOBAL)
 
@@ -454,7 +455,7 @@ typedef struct
 
 	void (*pfnPM_Move)(struct playermove_s* ppmove, qboolean server);
 	void (*pfnPM_Init)(struct playermove_s* ppmove);
-	char (*pfnPM_FindTextureType)(char* name);
+	char (*pfnPM_FindTextureType)(const char* name);
 	void (*pfnSetupVisibility)(struct edict_s* pViewEntity, struct edict_s* pClient, unsigned char** pvs, unsigned char** pas);
 	void (*pfnUpdateClientData)(const struct edict_s* ent, int sendweapons, struct clientdata_s* cd);
 	int (*pfnAddToFullPack)(struct entity_state_s* state, int e, edict_t* ent, edict_t* host, int hostflags, int player, unsigned char* pSet);
